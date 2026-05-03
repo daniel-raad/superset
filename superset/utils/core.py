@@ -2092,6 +2092,13 @@ def check_is_safe_zip(zip_file: ZipFile) -> None:
     """
     Checks whether a ZIP file is safe, raises SupersetException if not.
 
+    Validates each entry against three classes of attack:
+    - Zip bombs via per-file size threshold.
+    - Zip bombs via overall compression ratio.
+    - Path traversal (zip slip) via absolute paths or ``..`` segments in
+      filenames. Disk-write paths are not exercised by current callers, but
+      this check provides defense-in-depth against future regressions.
+
     :param zip_file:
     :return:
     """
@@ -2100,6 +2107,8 @@ def check_is_safe_zip(zip_file: ZipFile) -> None:
     uncompress_size = 0
     compress_size = 0
     for zip_file_element in zip_file.infolist():
+        if _is_unsafe_zip_filename(zip_file_element.filename):
+            raise SupersetException("Found file with unsafe path in ZIP archive")
         if zip_file_element.file_size > app.config["ZIPPED_FILE_MAX_SIZE"]:
             raise SupersetException("Found file with size above allowed threshold")
         uncompress_size += zip_file_element.file_size
@@ -2107,6 +2116,24 @@ def check_is_safe_zip(zip_file: ZipFile) -> None:
     compress_ratio = uncompress_size / compress_size
     if compress_ratio > app.config["ZIP_FILE_MAX_COMPRESS_RATIO"]:
         raise SupersetException("Zip compress ratio above allowed threshold")
+
+
+def _is_unsafe_zip_filename(filename: str) -> bool:
+    """
+    Return True if a ZIP entry filename could escape the extraction root.
+
+    Rejects absolute POSIX paths, Windows drive-qualified paths, and any
+    path containing a ``..`` component. Backslashes are normalized to
+    forward slashes so Windows-style separators cannot be used to bypass
+    the check.
+    """
+    normalized = filename.replace("\\", "/")
+    if normalized.startswith("/"):
+        return True
+    # Windows drive letter (e.g. "C:foo" or "C:/foo")
+    if len(normalized) >= 2 and normalized[1] == ":":
+        return True
+    return ".." in normalized.split("/")
 
 
 def remove_extra_adhoc_filters(form_data: dict[str, Any]) -> None:

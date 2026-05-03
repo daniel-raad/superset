@@ -71,6 +71,7 @@ EXTRA_FILTER: QueryObjectFilterClause = {
 class MockZipInfo:
     file_size: int
     compress_size: int
+    filename: str = "safe.txt"
 
 
 @pytest.mark.parametrize(
@@ -468,6 +469,59 @@ def test_check_if_safe_zip_hidden_bomb(app_context: None) -> None:
     ]
     with pytest.raises(SupersetException):
         check_is_safe_zip(ZipFile)
+
+
+@pytest.mark.parametrize(
+    "unsafe_filename",
+    [
+        "../etc/passwd",
+        "../../etc/passwd",
+        "foo/../../bar.yaml",
+        "/etc/passwd",
+        "/absolute/path.yaml",
+        "..\\windows\\system32\\config",
+        "..\\..\\foo.txt",
+        "C:/Windows/System32/cmd.exe",
+        "C:\\Windows\\System32\\cmd.exe",
+    ],
+)
+def test_check_is_safe_zip_blocks_unsafe_paths(
+    app_context: None, unsafe_filename: str
+) -> None:
+    """
+    Test that ZIP entries with path traversal or absolute paths are rejected.
+    """
+    ZipFile = MagicMock()  # noqa: N806
+    ZipFile.infolist.return_value = [
+        MockZipInfo(file_size=10, compress_size=10, filename="safe.yaml"),
+        MockZipInfo(file_size=10, compress_size=10, filename=unsafe_filename),
+    ]
+    with pytest.raises(SupersetException, match="unsafe path"):
+        check_is_safe_zip(ZipFile)
+
+
+@pytest.mark.parametrize(
+    "safe_filename",
+    [
+        "safe.yaml",
+        "nested/dir/file.yaml",
+        "name..with..dots.yaml",
+        "..hidden.yaml",
+        "trailing..",
+        "deeply/nested/dir/with/dots..in/name.yaml",
+    ],
+)
+def test_check_is_safe_zip_allows_safe_paths(
+    app_context: None, safe_filename: str
+) -> None:
+    """
+    Test that ZIP entries with benign filenames containing dots are accepted.
+    """
+    ZipFile = MagicMock()  # noqa: N806
+    ZipFile.infolist.return_value = [
+        MockZipInfo(file_size=10, compress_size=10, filename=safe_filename),
+    ]
+    check_is_safe_zip(ZipFile)
 
 
 def test_generic_constraint_name_exists():
