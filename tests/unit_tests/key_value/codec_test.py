@@ -14,6 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+import warnings
 from contextlib import nullcontext
 from typing import Any
 
@@ -117,6 +118,13 @@ def test_marshmallow_codec(schema: Schema, input_: Any, expected_result: Any):
     ],
 )
 def test_pickle_codec(input_: Any, expected_result: Any):
-    codec = PickleKeyValueCodec()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        codec = PickleKeyValueCodec()
     encoded_value = codec.encode(input_)
     assert expected_result == codec.decode(encoded_value)
+
+
+def test_pickle_codec_emits_deprecation_warning():
+    with pytest.warns(DeprecationWarning, match="PickleKeyValueCodec is deprecated"):
+        PickleKeyValueCodec()

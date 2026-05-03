@@ -24,6 +24,10 @@ assists people when migrating to a new version.
 
 ## Next
 
+### Deprecation: `PickleKeyValueCodec`
+
+`superset.key_value.types.PickleKeyValueCodec` is deprecated and will be removed in a future release. Instantiating it now emits a `DeprecationWarning`. The codec wraps `pickle.loads`, which permits arbitrary code execution on untrusted input. Migrate any custom code that imports `PickleKeyValueCodec` (for example, custom `CACHE_CONFIG` overrides for `SupersetMetastoreCache`) to `JsonKeyValueCodec` or `MarshmallowKeyValueCodec`.
+
 ### Granular Export Controls
 
 A new feature flag `GRANULAR_EXPORT_CONTROLS` introduces three fine-grained permissions that replace the legacy `can_csv` permission:

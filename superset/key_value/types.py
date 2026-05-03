@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import pickle
+import warnings
 from abc import ABC, abstractmethod
 from typing import Any, TypedDict, Union
 from uuid import UUID
@@ -78,6 +79,23 @@ class JsonKeyValueCodec(KeyValueCodec):
 
 
 class PickleKeyValueCodec(KeyValueCodec):
+    """
+    Deprecated: pickle-based codec retained for backwards compatibility with
+    existing key-value entries. ``pickle.loads`` allows arbitrary code
+    execution on attacker-controlled bytes, so prefer ``JsonKeyValueCodec`` or
+    ``MarshmallowKeyValueCodec`` for any new key-value store usage. This class
+    is scheduled for removal in a future release.
+    """
+
+    def __init__(self) -> None:
+        warnings.warn(
+            "PickleKeyValueCodec is deprecated due to security risks "
+            "(pickle.loads enables arbitrary code execution). "
+            "Use JsonKeyValueCodec or MarshmallowKeyValueCodec instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
     def encode(self, value: dict[Any, Any]) -> bytes:
         return pickle.dumps(value)
 
