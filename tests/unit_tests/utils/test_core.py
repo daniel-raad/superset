@@ -483,6 +483,11 @@ def test_check_if_safe_zip_hidden_bomb(app_context: None) -> None:
         "..\\..\\foo.txt",
         "C:/Windows/System32/cmd.exe",
         "C:\\Windows\\System32\\cmd.exe",
+        # Backslashes are not valid ZIP path separators; reject outright
+        # even when they don't form a traversal sequence.
+        "foo\\bar.yaml",
+        "nested\\dir\\file.yaml",
+        "trailing\\",
     ],
 )
 def test_check_is_safe_zip_blocks_unsafe_paths(

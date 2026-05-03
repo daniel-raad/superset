@@ -2122,18 +2122,22 @@ def _is_unsafe_zip_filename(filename: str) -> bool:
     """
     Return True if a ZIP entry filename could escape the extraction root.
 
-    Rejects absolute POSIX paths, Windows drive-qualified paths, and any
-    path containing a ``..`` component. Backslashes are normalized to
-    forward slashes so Windows-style separators cannot be used to bypass
-    the check.
+    Rejects:
+    - filenames containing a backslash (the ZIP APPNOTE specifies ``/`` as
+      the only path separator, so a ``\\`` in an entry name is treated as
+      malformed and unsafe);
+    - absolute POSIX paths;
+    - Windows drive-qualified paths (e.g. ``C:foo``); and
+    - any path containing a ``..`` component when split on ``/``.
     """
-    normalized = filename.replace("\\", "/")
-    if normalized.startswith("/"):
+    if "\\" in filename:
+        return True
+    if filename.startswith("/"):
         return True
     # Windows drive letter (e.g. "C:foo" or "C:/foo")
-    if len(normalized) >= 2 and normalized[1] == ":":
+    if len(filename) >= 2 and filename[1] == ":":
         return True
-    return ".." in normalized.split("/")
+    return ".." in filename.split("/")
 
 
 def remove_extra_adhoc_filters(form_data: dict[str, Any]) -> None:
