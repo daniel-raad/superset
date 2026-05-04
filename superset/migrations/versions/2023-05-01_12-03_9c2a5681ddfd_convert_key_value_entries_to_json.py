@@ -26,6 +26,13 @@ Create Date: 2023-05-01 12:03:17.079862
 revision = "9c2a5681ddfd"
 down_revision = "f3c2d8ec8595"
 
+# Frozen migration: this file converts pickle-encoded key_value entries to
+# JSON. The upgrade path deliberately uses a ``RestrictedUnpickler`` to
+# constrain which classes can be deserialized, while the downgrade path
+# re-pickles JSON values to preserve reversibility. Pickle usage is retained
+# intentionally because rewriting historical Alembic migrations is unsafe.
+# New code must use the JSON codecs from ``superset.key_value.types``
+# (``PickleKeyValueCodec`` is deprecated).
 import io  # noqa: E402
 import pickle  # noqa: E402
 

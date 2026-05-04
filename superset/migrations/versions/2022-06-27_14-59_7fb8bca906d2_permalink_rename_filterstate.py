@@ -26,6 +26,11 @@ Create Date: 2022-06-27 14:59:20.740380
 revision = "7fb8bca906d2"
 down_revision = "f3afaf1f11f0"
 
+# Frozen migration: this file rewrites pickle-encoded key_value entries that
+# pre-date the JSON conversion in revision 9c2a5681ddfd. The raw pickle
+# usage below is retained intentionally because rewriting historical Alembic
+# migrations is unsafe. New code must use the JSON codecs from
+# ``superset.key_value.types`` (``PickleKeyValueCodec`` is deprecated).
 import pickle  # noqa: E402
 
 from alembic import op  # noqa: E402
