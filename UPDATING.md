@@ -24,6 +24,18 @@ assists people when migrating to a new version.
 
 ## Next
 
+### `datetime.utcnow()` replaced with `superset.utils.dates.utcnow()`
+
+`datetime.utcnow()` is deprecated in Python 3.12 and emits a `DeprecationWarning` at runtime. All 26 call sites in the Superset backend (concentrated in `superset/commands/report/execute.py`, `superset/utils/cache.py`, `superset/commands/report/log_prune.py`, `superset/daos/log.py`, and `superset/utils/dates.py`) have been migrated to a new helper:
+
+```python
+from superset.utils.dates import utcnow
+
+dttm = utcnow()  # naive UTC datetime, drop-in replacement for datetime.utcnow()
+```
+
+The helper returns a naive `datetime` (no `tzinfo`) — semantically identical to `datetime.utcnow()` — so SQLAlchemy `DateTime` columns and existing comparisons continue to work without behavior changes. **Contributors should use `utcnow()` instead of `datetime.utcnow()` in new backend code.**
+
 ### Granular Export Controls
 
 A new feature flag `GRANULAR_EXPORT_CONTROLS` introduces three fine-grained permissions that replace the legacy `can_csv` permission:
