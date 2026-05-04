@@ -14,11 +14,22 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytz
 
 EPOCH = datetime(1970, 1, 1)
+
+
+def utcnow() -> datetime:
+    """Return current UTC time as a naive ``datetime`` (no ``tzinfo``).
+
+    Drop-in replacement for ``datetime.utcnow()``, which is deprecated as of
+    Python 3.12. Returns a naive datetime to preserve the long-standing
+    convention used across the Superset backend (e.g. SQLAlchemy ``DateTime``
+    columns store naive UTC values).
+    """
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def datetime_to_epoch(dttm: datetime) -> float:
@@ -31,4 +42,4 @@ def datetime_to_epoch(dttm: datetime) -> float:
 
 
 def now_as_float() -> float:
-    return datetime_to_epoch(datetime.utcnow())
+    return datetime_to_epoch(utcnow())
