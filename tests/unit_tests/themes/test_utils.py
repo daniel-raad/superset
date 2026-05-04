@@ -111,6 +111,25 @@ def test_sanitize_theme_tokens_with_url():
     assert result["token"]["colorPrimary"] == "#ff0000"  # Unchanged
 
 
+def test_sanitize_theme_tokens_blocks_protocol_relative_url():
+    """Test that protocol-relative URLs are blocked in brandSpinnerUrl.
+
+    A protocol-relative URL like ``//evil.com/x.gif`` would otherwise be
+    rendered as an external image tag and load from an attacker-controlled
+    domain.
+    """
+    theme_config = {
+        "token": {
+            "brandSpinnerUrl": "//evil.com/malicious.gif",
+            "colorPrimary": "#ff0000",
+        }
+    }
+    result = sanitize_theme_tokens(theme_config)
+
+    assert result["token"]["brandSpinnerUrl"] == ""  # Blocked
+    assert result["token"]["colorPrimary"] == "#ff0000"  # Unchanged
+
+
 def test_sanitize_theme_tokens_no_spinner_tokens():
     """Test that themes without spinner tokens are unchanged."""
     theme_config = {"token": {"colorPrimary": "#ff0000", "fontFamily": "Arial"}}

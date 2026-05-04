@@ -588,6 +588,11 @@ def sanitize_url(url: str) -> str:
 
     url = url.strip()
 
+    # Block protocol-relative URLs (e.g. "//evil.com"), which browsers
+    # resolve against the current page scheme and treat as external.
+    if url.startswith("//"):
+        return ""
+
     # Relative URLs are safe
     if url.startswith("/"):
         return url

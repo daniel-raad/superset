@@ -1688,3 +1688,17 @@ def test_sanitize_url_blocks_dangerous():
     """Test that dangerous URL schemes are blocked."""
     assert sanitize_url("javascript:alert('xss')") == ""
     assert sanitize_url("data:text/html,<script>alert(1)</script>") == ""
+
+
+def test_sanitize_url_blocks_protocol_relative():
+    """Test that protocol-relative URLs are blocked.
+
+    Browsers resolve URLs like ``//evil.com/path`` against the current
+    page scheme, so they must not be treated as same-origin relative URLs.
+    """
+    assert sanitize_url("//evil.com/path") == ""
+    assert sanitize_url("//evil.com") == ""
+    # Leading whitespace must not bypass the check.
+    assert sanitize_url("  //evil.com") == ""
+    # Triple-slash variants are also protocol-relative in practice.
+    assert sanitize_url("///evil.com") == ""
