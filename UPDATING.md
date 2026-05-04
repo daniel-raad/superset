@@ -24,6 +24,21 @@ assists people when migrating to a new version.
 
 ## Next
 
+### `SupersetMetastoreCache` default codec is now `JsonKeyValueCodec`
+
+The default codec used by `SupersetMetastoreCache` (configured via the `CODEC` key in a `SupersetMetastoreCache` cache config) has changed from `PickleKeyValueCodec` to `JsonKeyValueCodec`. The previous default deserialized cache entries with `pickle.loads()`, which is unsafe if an attacker can write to the `key_value` table.
+
+**Impact:** This only affects users who configure `CACHE_TYPE: SupersetMetastoreCache` without explicitly setting `CODEC` (for example, the `DATA_CACHE_CONFIG` example in the docs). The bundled `FILTER_STATE_CACHE_CONFIG` and `EXPLORE_FORM_DATA_CACHE_CONFIG` defaults already set `CODEC: JsonKeyValueCodec()` and are unaffected.
+
+**Action required:** If you relied on the previous default and have cached values that are not JSON-serializable (for example, tuples, sets, or arbitrary Python objects), either:
+
+- Switch the affected cache(s) to a JSON-serializable shape, or
+- Explicitly opt back in by setting `"CODEC": PickleKeyValueCodec()` in the cache config (not recommended — see the warning below).
+
+Because the metastore table is a cache, pre-existing pickle-encoded entries can be safely invalidated; they will be re-populated on the next write. Stale entries that fail to JSON-decode will surface as cache misses.
+
+`PickleKeyValueCodec` continues to be available for users who explicitly opt in, but doing so still emits a warning that pickle-based deserialization is unsafe.
+
 ### Granular Export Controls
 
 A new feature flag `GRANULAR_EXPORT_CONTROLS` introduces three fine-grained permissions that replace the legacy `can_csv` permission:
