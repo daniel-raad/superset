@@ -24,6 +24,14 @@ assists people when migrating to a new version.
 
 ## Next
 
+### `SupersetMetastoreCache` default codec changed to JSON
+
+`SupersetMetastoreCache.factory()` previously defaulted to `PickleKeyValueCodec` when no `CODEC` was provided in the cache config. `PickleKeyValueCodec.decode()` calls `pickle.loads()` without restrictions, which is unsafe deserialization (potential remote code execution) if an attacker can write to the `key_value` database table. The default has been changed to `JsonKeyValueCodec`, which is also what every other production caller of the key-value store already uses.
+
+**Who is affected:** Deployments configuring `CACHE_TYPE: SupersetMetastoreCache` (e.g. for `DATA_CACHE_CONFIG` or `FILTER_STATE_CACHE_CONFIG`) without setting an explicit `CODEC`.
+
+**Migration:** Because this is a cache, pre-existing pickle-encoded entries do not need to be migrated — they can simply be invalidated. Operators may either let the cache repopulate organically (existing entries will be treated as cache misses and overwritten) or clear the affected rows from the `key_value` table for a clean cut-over. Operators that legitimately need pickle semantics (e.g. caching tuples, sets, or arbitrary Python objects) can preserve the previous behavior by setting `"CODEC": PickleKeyValueCodec()` explicitly; this continues to emit the existing "may be unsafe" warning.
+
 ### Granular Export Controls
 
 A new feature flag `GRANULAR_EXPORT_CONTROLS` introduces three fine-grained permissions that replace the legacy `can_csv` permission:
